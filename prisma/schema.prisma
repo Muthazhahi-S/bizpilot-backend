@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum EnquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum LeadSource {
+  WEBSITE
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  REFERRAL
+  PHONE
+  EMAIL
+  OTHER
+}
+
+model Business {
+  id        String     @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  industry  String?
+  location  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  customers Customer[]
+  leads     Lead[]
+  enquiries Enquiry[]
+}
+
+model Customer {
+  id         String    @id @default(cuid())
+  businessId String
+  name       String
+  email      String?
+  phone      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leads      Lead[]
+  enquiries  Enquiry[]
+
+  @@unique([id, businessId])
+  @@index([businessId])
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  businessId String
+  customerId String
+  service    String
+  source     LeadSource @default(OTHER)
+  status     LeadStatus @default(NEW)
+  message    String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer   Customer   @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([customerId, businessId])
+  @@index([businessId, status])
+}
+
+model Enquiry {
+  id         String        @id @default(cuid())
+  businessId String
+  customerId String
+  message    String
+  source     LeadSource    @default(OTHER)
+  status     EnquiryStatus @default(NEW)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer   Customer      @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([customerId, businessId])
+  @@index([businessId, status])
+}
